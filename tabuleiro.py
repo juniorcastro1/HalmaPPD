@@ -1,4 +1,8 @@
-# game.py
+# tabuleiro.py
+
+"""
+Aqui é definido as regras e estado do jogo. Tabuleiro, tamanho dele, etc.
+"""
 class HalmaGame:
     def __init__(self, board_size=10):
         self.board_size = board_size
