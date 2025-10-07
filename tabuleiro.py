@@ -20,10 +20,13 @@ class HalmaGame:
             (0, 2), (1, 2),
             (0, 3)
         ]
+
+        #Para cada posição da matriz é adicionado um valor(1 ou 2) para saber qual peça é de qual jogador
         for r, c in initial_positions_p1:
             self.board[r][c] = 1
 
         # Peças do Jogador 2 (canto inferior direito)
+        # Função para dispor as peças baseado nas peças do primeiro jogador usando espelhamento
         for r, c in initial_positions_p1:
             self.board[self.board_size - 1 - r][self.board_size - 1 - c] = 2
 
