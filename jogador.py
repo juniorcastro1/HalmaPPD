@@ -4,7 +4,6 @@ import threading
 import tkinter as tk
 from tkinter import simpledialog, scrolledtext, messagebox
 
-# --- Constantes e definições de Posição permanecem as mesmas ---
 HOST = '127.0.0.1'
 PORT = 65432
 BOARD_SIZE = 10
@@ -26,7 +25,6 @@ class HalmaClient:
         self.selected_piece = None
         self.possible_moves = []
 
-        # --- NOVAS VARIÁVEIS DE ESTADO ---
         self.forfeit_pending = False # Para a confirmação de desistência
         self.last_status_message = "" # Para restaurar a mensagem de status
         self.scheduled_job = None # Para gerenciar o timer das notificações
@@ -36,7 +34,6 @@ class HalmaClient:
         self._setup_pieces()
 
     def _setup_ui(self):
-        # (A estrutura da UI é a mesma)
         self.status_label = tk.Label(self.master, text="Conectando...", font=("Arial", 12))
         self.status_label.pack(pady=5)
         self.canvas = tk.Canvas(self.master, width=BOARD_SIZE*CELL_SIZE, height=BOARD_SIZE*CELL_SIZE, bg='beige')
@@ -60,11 +57,9 @@ class HalmaClient:
             self.client_socket.connect((HOST, PORT))
             threading.Thread(target=self.receive_messages, daemon=True).start()
         except ConnectionRefusedError:
-            # Este é um erro crítico, mantemos o messagebox pois o app será fechado.
             messagebox.showerror("Erro", "Não foi possível conectar ao servidor.")
             self.master.destroy()
     
-    # --- NOVO: Sistema de Notificações no Status Label ---
     def set_status(self, message, color="black", permanent=False):
         """Define uma mensagem de status permanente."""
         self.status_label.config(text=message, fg=color)
@@ -84,7 +79,6 @@ class HalmaClient:
         # Agenda a restauração da mensagem original
         self.scheduled_job = self.master.after(duration, lambda: self.status_label.config(text=current_text, fg=current_color))
 
-    # --- ATUALIZADO: Lógica de Desistência em Dois Cliques ---
     def forfeit_game(self):
         if not self.forfeit_pending:
             self.forfeit_pending = True
@@ -100,12 +94,12 @@ class HalmaClient:
         self.forfeit_pending = False
         self.forfeit_button.config(text="Desistir da Partida", bg="red")
 
-    # --- ATUALIZADO: Processamento de Mensagens do Servidor ---
     def receive_messages(self):
         while True:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
-                if not message: break
+                if not message: 
+                    break
                 
                 parts = message.split(':')
                 command = parts[0]
@@ -143,13 +137,9 @@ class HalmaClient:
                     self.is_my_turn = False
                     self.set_status("Oponente desconectou. O jogo terminou.", permanent=True)
             except ConnectionResetError:
-                # Este também é um erro crítico, mantemos o messagebox.
                 messagebox.showerror("Desconectado", "A conexão com o servidor foi perdida.")
                 break
-    
-    # --- Funções restantes (desenho, lógica de clique, etc.) ---
-    # (Nenhuma alteração necessária no restante do código. Cole o resto do
-    # arquivo da versão anterior aqui)
+
     def _setup_pieces(self):
         for r, c in P1_INITIAL_POSITIONS: self.board[r][c] = 1
         for r, c in P2_INITIAL_POSITIONS: self.board[r][c] = 2
@@ -230,11 +220,11 @@ class HalmaClient:
         self.draw_board()
         
     def send_message(self, message):
-        try: self.client_socket.send(message.encode('utf-8'))
+        try: 
+            self.client_socket.send(message.encode('utf-8'))
         except (BrokenPipeError, ConnectionResetError): self.handle_server_disconnect()
             
     def handle_server_disconnect(self):
-        # Mantendo o messagebox aqui pois é um evento terminal.
         if self.master.winfo_exists():
             messagebox.showerror("Desconectado", "A conexão com o servidor foi perdida.")
             self.master.destroy()
