@@ -1,5 +1,6 @@
 # jogador.py
 import socket
+from PIL import Image, ImageTk
 import threading
 import tkinter as tk
 from tkinter import simpledialog, scrolledtext, messagebox
@@ -25,6 +26,8 @@ class HalmaClient:
         self.selected_piece = None
         self.possible_moves = []
 
+        self.load_images()
+
         self.forfeit_pending = False # Para a confirmação de desistência
         self.last_status_message = "" # Para restaurar a mensagem de status
         self.scheduled_job = None # Para gerenciar o timer das notificações
@@ -32,6 +35,21 @@ class HalmaClient:
         self._setup_ui()
         self._connect_to_server()
         self._setup_pieces()
+
+    def load_images(self):
+        """Carrega as imagens das peças"""
+        try:
+            planeta1 = Image.open("assets/planeta1.jpg").resize((32,32), Image.LANCZOS)
+            planeta2 = Image.open("assets/planeta2.jpg").resize((32,32), Image.LANCZOS)
+
+            #convertendo para o formato tkinter
+            self.planeta1_peca = ImageTk.PhotoImage(planeta1)
+            self.planeta2_peca = ImageTk.PhotoImage(planeta2)
+
+        except FileNotFoundError:
+            messagebox.showerror("Poxa, aparentemente os arquivos de imagens não foram encontrados!")
+            self.master.destroy()
+
 
     def _setup_ui(self):
         self.status_label = tk.Label(self.master, text="Conectando...", font=("Arial", 12))
@@ -147,27 +165,36 @@ class HalmaClient:
 
     def draw_board(self):
         self.canvas.delete("all")
+
+        #desenha grid e preenche os quadrados
         for r in range(BOARD_SIZE):
             for c in range(BOARD_SIZE):
                 x1, y1 = c * CELL_SIZE, r * CELL_SIZE
-                fill_color = "white"
+                fill_color = "#f2e396"
                 if (r, c) in P1_INITIAL_POSITIONS: fill_color = "#E0E8FF"
                 elif (r, c) in P2_INITIAL_POSITIONS: fill_color = "#FFE0E0"
                 self.canvas.create_rectangle(x1, y1, x1 + CELL_SIZE, y1 + CELL_SIZE, outline="black", fill=fill_color)
+
+        #destaca movimentos possíveis
         for r, c in self.possible_moves:
             x1, y1 = c * CELL_SIZE, r * CELL_SIZE
             self.canvas.create_oval(x1 + 15, y1 + 15, x1 + CELL_SIZE - 15, y1 + CELL_SIZE - 15, fill="#90EE90", outline="")
+
+        #desenhas as peças
         for r in range(BOARD_SIZE):
             for c in range(BOARD_SIZE):
                 player = self.board[r][c]
                 if player != 0:
-                    x1, y1 = c * CELL_SIZE, r * CELL_SIZE
-                    piece_color = "blue" if player == self.player_id else "black"
-                    self.canvas.create_oval(x1 + 5, y1 + 5, x1 + CELL_SIZE - 5, y1 + CELL_SIZE - 5, fill=piece_color, outline=piece_color)
-        if self.selected_piece:
-            r, c = self.selected_piece
-            x1, y1 = c * CELL_SIZE, r * CELL_SIZE
-            self.canvas.create_oval(x1 + 2, y1 + 2, x1 + CELL_SIZE - 2, y1 + CELL_SIZE - 2, outline="red", width=3)
+                    # Calcula o centro da célula para posicionar a imagem
+                    x_center = (c * CELL_SIZE) + (CELL_SIZE // 2)
+                    y_center = (r * CELL_SIZE) + (CELL_SIZE // 2)
+                    
+                    # Escolhe qual imagem desenhar
+                    image_to_draw = self.planeta1_peca if player == self.player_id else self.planeta2_peca
+                    
+                    # Usa create_image em vez de create_oval
+                    self.canvas.create_image(x_center, y_center, image=image_to_draw)
+
 
     def on_canvas_click(self, event):
         if not self.is_my_turn: return

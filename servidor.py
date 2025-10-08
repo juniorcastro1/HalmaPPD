@@ -33,8 +33,6 @@ def handle_client(conn, player_id):
                     from_pos = tuple(map(int, parts[1].split(',')))
                     to_pos = tuple(map(int, parts[2].split(',')))
                     
-                    # Para simplificar, esta versão não implementa saltos múltiplos
-                    # A validação de salto único já está na lógica do jogo
                     if game.is_valid_move(player_id, from_pos, to_pos, []):
                         game.move_piece(player_id, from_pos, to_pos)
                         broadcast(f"UPDATE:{from_pos[0]},{from_pos[1]}:{to_pos[0]},{to_pos[1]}")
@@ -98,7 +96,7 @@ def start_server():
                 # Envia o comando de turno para o primeiro jogador
                 clients[0].send("SEU_TURNO".encode('utf-8'))
         else:
-            conn.send("ERRO:Sala cheia.".encode('utf-8'))
+            conn.send("Poxa, a sala está cheia.".encode('utf-8'))
             conn.close()
 
 if __name__ == "__main__":
