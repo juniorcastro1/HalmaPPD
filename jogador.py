@@ -217,7 +217,8 @@ class HalmaClient:
         moves = set()
         for dr in [-1, 0, 1]:
             for dc in [-1, 0, 1]:
-                if dr == 0 and dc == 0: continue
+                if dr == 0 and dc == 0: 
+                    continue
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and self.board[nr][nc] == 0:
                     moves.add((nr, nc))
@@ -228,7 +229,8 @@ class HalmaClient:
         r, c = current_pos
         for dr in [-1, 0, 1]:
             for dc in [-1, 0, 1]:
-                if dr == 0 and dc == 0: continue
+                if dr == 0 and dc == 0: 
+                    continue
                 jump_over_r, jump_over_c = r + dr, c + dc
                 dest_r, dest_c = r + 2*dr, c + 2*dc
                 if (0 <= dest_r < BOARD_SIZE and 0 <= dest_c < BOARD_SIZE and
@@ -249,7 +251,8 @@ class HalmaClient:
     def send_message(self, message):
         try: 
             self.client_socket.send(message.encode('utf-8'))
-        except (BrokenPipeError, ConnectionResetError): self.handle_server_disconnect()
+        except (BrokenPipeError, ConnectionResetError): 
+            self.handle_server_disconnect()
             
     def handle_server_disconnect(self):
         if self.master.winfo_exists():
