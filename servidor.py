@@ -5,13 +5,13 @@ from tabuleiro import HalmaGame
 
 HOST = '127.0.0.1'
 PORT = 65432
-clients = []
+jogadores = []
 player_map = {}
-game = HalmaGame()
+jogo = HalmaGame()
 game_lock = threading.Lock()
 
-def handle_client(conn, player_id):
-    global game
+def handle_jogador(conn, player_id):
+    global jogo
     print(f"[JOGADOR {player_id}] Conectado de {conn.getpeername()}")
 
     while True:
@@ -26,21 +26,21 @@ def handle_client(conn, player_id):
 
             with game_lock:
                 if command == "MOVE":
-                    if game.current_turn != player_id:
-                        conn.send("ERRO:Não é o seu turno.".encode('utf-8'))
+                    if jogo.current_turn != player_id:
+                        conn.send("ERRO: Calma lá, ainda não é o seu turno!.".encode('utf-8'))
                         continue
                     
                     from_pos = tuple(map(int, parts[1].split(',')))
                     to_pos = tuple(map(int, parts[2].split(',')))
                     
-                    if game.is_valid_move(player_id, from_pos, to_pos, []):
-                        game.move_piece(player_id, from_pos, to_pos)
+                    if jogo.is_valid_move(player_id, from_pos, to_pos, []):
+                        jogo.move_piece(player_id, from_pos, to_pos)
                         broadcast(f"UPDATE:{from_pos[0]},{from_pos[1]}:{to_pos[0]},{to_pos[1]}")
                         
-                        if game.winner:
-                            broadcast(f"VENCEDOR:{game.winner}")
+                        if jogo.winner:
+                            broadcast(f"VENCEDOR:{jogo.winner}")
                         else: # Envia o turno para o próximo jogador
-                             clients[game.current_turn-1].send(f"SEU_TURNO".encode('utf-8'))
+                             jogadores[jogo.current_turn-1].send(f"SEU_TURNO".encode('utf-8'))
                     else:
                         conn.send("ERRO:Movimento inválido.".encode('utf-8'))
                 
@@ -56,14 +56,14 @@ def handle_client(conn, player_id):
             break
 
     print(f"[JOGADOR {player_id}] Desconectado.")
-    clients.remove(conn)
+    jogadores.remove(conn)
     conn.close()
-    if len(clients) < 2 and not game.winner:
+    if len(jogadores) < 2 and not jogo.winner:
          broadcast("OPONENTE_DESCONECTOU")
 
 
 def broadcast(message, sender_conn=None):
-    for client_conn in clients:
+    for client_conn in jogadores:
         if client_conn != sender_conn:
             try:
                 client_conn.send(message.encode('utf-8'))
@@ -80,21 +80,21 @@ def start_server():
     player_id_counter = 1
     while True:
         conn, addr = server_socket.accept()
-        if len(clients) < 2:
-            clients.append(conn)
+        if len(jogadores) < 2:
+            jogadores.append(conn)
             player_map[conn] = player_id_counter
             
-            thread = threading.Thread(target=handle_client, args=(conn, player_id_counter))
+            thread = threading.Thread(target=handle_jogador, args=(conn, player_id_counter))
             thread.start()
             
             conn.send(f"BEMVINDO:{player_id_counter}".encode('utf-8'))
             player_id_counter += 1
 
-            if len(clients) == 2:
+            if len(jogadores) == 2:
                 print("Ambos os jogadores conectados. Iniciando o jogo.")
                 broadcast("INICIAR_JOGO")
                 # Envia o comando de turno para o primeiro jogador
-                clients[0].send("SEU_TURNO".encode('utf-8'))
+                jogadores[0].send("SEU_TURNO".encode('utf-8'))
         else:
             conn.send("Poxa, a sala está cheia.".encode('utf-8'))
             conn.close()

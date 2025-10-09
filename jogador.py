@@ -75,7 +75,7 @@ class HalmaClient:
             self.client_socket.connect((HOST, PORT))
             threading.Thread(target=self.receive_messages, daemon=True).start()
         except ConnectionRefusedError:
-            messagebox.showerror("Erro", "Não foi possível conectar ao servidor.")
+            messagebox.showerror("ERRO", "Não foi possível conectar ao servidor.")
             self.master.destroy()
     
     def set_status(self, message, color="black", permanent=False):
@@ -190,9 +190,8 @@ class HalmaClient:
                     y_center = (r * CELL_SIZE) + (CELL_SIZE // 2)
                     
                     # Escolhe qual imagem desenhar
-                    image_to_draw = self.planeta1_peca if player == self.player_id else self.planeta2_peca
+                    image_to_draw = self.planeta1_peca if player == 1 else self.planeta2_peca
                     
-                    # Usa create_image em vez de create_oval
                     self.canvas.create_image(x_center, y_center, image=image_to_draw)
 
 
