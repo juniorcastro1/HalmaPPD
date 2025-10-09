@@ -1,5 +1,4 @@
 # tabuleiro.py
-
 """
 Aqui é definido as regras e estado do jogo. Tabuleiro, tamanho dele, etc.
 """
@@ -7,13 +6,14 @@ class HalmaGame:
     def __init__(self, board_size=10):
         self.board_size = board_size
         self.board = [[0] * board_size for _ in range(board_size)]
-        self.current_turn = 1  # Jogador 1 começa
+        self.current_turn = 1  # o jogador 1 sempre começa(eu poderia botar um dado ou moeda para ver quem começa?)
         self.winner = None
         self._setup_pieces()
 
     def _setup_pieces(self):
         """Posiciona as peças iniciais para os dois jogadores."""
-        # Peças do Jogador 1 (canto superior esquerdo)
+        # Peças do Jogador 1 (canto superior esquerdo) 
+        # Embora, pudesse ser em um canto aleatório
         initial_positions_p1 = [
             (0, 0), (1, 0), (2, 0), (3, 0),
             (0, 1), (1, 1), (2, 1),

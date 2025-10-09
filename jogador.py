@@ -21,26 +21,26 @@ class HalmaClient:
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.board = [[0] * BOARD_SIZE for _ in range(BOARD_SIZE)]
-        self.player_id = 0
+        self.jogador_id = 0
         self.is_my_turn = False
         self.selected_piece = None
         self.possible_moves = []
 
-        self.load_images()
+        self.carrega_imagens()
 
-        self.forfeit_pending = False # Para a confirmação de desistência
+        self.confirmar_desistencia = False # Para a confirmação de desistência
         self.last_status_message = "" # Para restaurar a mensagem de status
         self.scheduled_job = None # Para gerenciar o timer das notificações
 
-        self._setup_ui()
-        self._connect_to_server()
-        self._setup_pieces()
+        self.construir_ui()
+        self.conectar_ao_servidor()
+        self.dispor_pecas()
 
-    def load_images(self):
+    def carrega_imagens(self):
         """Carrega as imagens das peças"""
         try:
-            planeta1 = Image.open("assets/planeta1.jpg").resize((32,32), Image.LANCZOS)
-            planeta2 = Image.open("assets/planeta2.jpg").resize((32,32), Image.LANCZOS)
+            planeta1 = Image.open("assets/planeta1.png").resize((32,32), Image.LANCZOS)
+            planeta2 = Image.open("assets/planeta2.png").resize((32,32), Image.LANCZOS)
 
             #convertendo para o formato tkinter
             self.planeta1_peca = ImageTk.PhotoImage(planeta1)
@@ -51,7 +51,7 @@ class HalmaClient:
             self.master.destroy()
 
 
-    def _setup_ui(self):
+    def construir_ui(self):
         self.status_label = tk.Label(self.master, text="Conectando...", font=("Arial", 12))
         self.status_label.pack(pady=5)
         self.canvas = tk.Canvas(self.master, width=BOARD_SIZE*CELL_SIZE, height=BOARD_SIZE*CELL_SIZE, bg='beige')
@@ -66,16 +66,16 @@ class HalmaClient:
         self.chat_input.bind("<Return>", self.send_chat_message)
         self.send_button = tk.Button(chat_frame, text="Enviar", command=self.send_chat_message)
         self.send_button.pack(side=tk.RIGHT)
-        self.forfeit_button = tk.Button(self.master, text="Desistir da Partida", command=self.forfeit_game, bg="red", fg="white", activebackground="darkred")
-        self.forfeit_button.pack(pady=5)
+        self.botao_desistencia = tk.Button(self.master, text="Desistir da Partida", command=self.desistencia, bg="red", fg="white", activebackground="darkred")
+        self.botao_desistencia.pack(pady=5)
 
-    def _connect_to_server(self):
+    def conectar_ao_servidor(self):
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect((HOST, PORT))
             threading.Thread(target=self.receive_messages, daemon=True).start()
         except ConnectionRefusedError:
-            messagebox.showerror("ERRO", "Não foi possível conectar ao servidor.")
+            messagebox.showerror("ERRO", "Poxa, não foi possível conectar ao servidor.")
             self.master.destroy()
     
     def set_status(self, message, color="black", permanent=False):
@@ -83,8 +83,9 @@ class HalmaClient:
         self.status_label.config(text=message, fg=color)
         if permanent:
             self.last_status_message = message
-        
-    def show_notification(self, message, color="orange", duration=3000):
+
+    #Não consegui fazer funcionar por algum motivo :/    
+    def mostrar_notificao(self, message, color="orange", duration=3000):
         """Mostra um aviso temporário no status label."""
         # Cancela qualquer notificação anterior agendada para evitar sobreposição
         if self.scheduled_job:
@@ -97,20 +98,20 @@ class HalmaClient:
         # Agenda a restauração da mensagem original
         self.scheduled_job = self.master.after(duration, lambda: self.status_label.config(text=current_text, fg=current_color))
 
-    def forfeit_game(self):
-        if not self.forfeit_pending:
-            self.forfeit_pending = True
-            self.forfeit_button.config(text="Confirmar Desistência?", bg="#FFA500") # Laranja
+    def desistencia(self):
+        if not self.confirmar_desistencia:
+            self.confirmar_desistencia = True
+            self.botao_desistencia.config(text="Confirmar Desistência?", bg="#FFA500") # Laranja
             # Agenda o cancelamento da confirmação
-            self.master.after(4000, self.reset_forfeit_button)
+            self.master.after(4000, self.resetar_botao_desistencia)
         else:
             self.send_message("DESISTENCIA")
-            self.reset_forfeit_button()
+            self.resetar_botao_desistencia()
 
-    def reset_forfeit_button(self):
+    def resetar_botao_desistencia(self):
         """Restaura o botão de desistência ao seu estado original."""
-        self.forfeit_pending = False
-        self.forfeit_button.config(text="Desistir da Partida", bg="red")
+        self.confirmar_desistencia = False
+        self.botao_desistencia.config(text="Desistir da Partida", bg="red")
 
     def receive_messages(self):
         while True:
@@ -123,9 +124,9 @@ class HalmaClient:
                 command = parts[0]
 
                 if command == "BEMVINDO":
-                    self.player_id = int(parts[1])
-                    self.master.title(f"Halma - Jogador {self.player_id}")
-                    self.set_status(f"Você é o Jogador {self.player_id}. Aguardando oponente.", permanent=True)
+                    self.jogador_id = int(parts[1])
+                    self.master.title(f"Halma - Jogador {self.jogador_id}")
+                    self.set_status(f"Você é o Jogador {self.jogador_id}. Aguardando oponente.", permanent=True)
                 elif command == "INICIAR_JOGO":
                     self.set_status("Jogo iniciado!", permanent=True)
                 elif command == "SEU_TURNO":
@@ -144,13 +145,13 @@ class HalmaClient:
                     winner_id = int(parts[1])
                     self.is_my_turn = False
                     reason = " Por desistência." if len(parts) > 2 else "."
-                    if winner_id == self.player_id:
+                    if winner_id == self.jogador_id:
                         self.set_status("Você venceu!" + reason, color="blue", permanent=True)
                     else:
                         self.set_status("Você perdeu." + reason, color="black", permanent=True)
                 elif command == "ERRO":
                     # Usa o novo sistema de notificação em vez de um messagebox
-                    self.show_notification(f"Aviso: {parts[1]}")
+                    self.set_status(f"Aviso: {parts[1]}")
                 elif command == "OPONENTE_DESCONECTOU":
                     self.is_my_turn = False
                     self.set_status("Oponente desconectou. O jogo terminou.", permanent=True)
@@ -158,7 +159,7 @@ class HalmaClient:
                 messagebox.showerror("Desconectado", "A conexão com o servidor foi perdida.")
                 break
 
-    def _setup_pieces(self):
+    def dispor_pecas(self):
         for r, c in P1_INITIAL_POSITIONS: self.board[r][c] = 1
         for r, c in P2_INITIAL_POSITIONS: self.board[r][c] = 2
         self.draw_board()
@@ -204,7 +205,7 @@ class HalmaClient:
             self.send_message(f"MOVE:{from_pos[0]},{from_pos[1]}:{clicked_pos[0]},{clicked_pos[1]}")
             self.selected_piece = None
             self.possible_moves = []
-        elif self.board[r][c] == self.player_id:
+        elif self.board[r][c] == self.jogador_id:
             self.selected_piece = clicked_pos
             self.possible_moves = self.calculate_possible_moves(r, c)
         else:

@@ -61,7 +61,6 @@ def handle_jogador(conn, player_id):
     if len(jogadores) < 2 and not jogo.winner:
          broadcast("OPONENTE_DESCONECTOU")
 
-
 def broadcast(message, sender_conn=None):
     for client_conn in jogadores:
         if client_conn != sender_conn:
@@ -69,7 +68,6 @@ def broadcast(message, sender_conn=None):
                 client_conn.send(message.encode('utf-8'))
             except Exception as e:
                 print(f"Erro ao transmitir: {e}")
-
 
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
